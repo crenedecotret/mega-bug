@@ -76,10 +76,18 @@ Yes, the game runs on Windows! The process is similar:
 | Key | Action |
 |-----|--------|
 | **Arrow Keys** or **WASD** | Move the cockroach |
-| **Space** | Pause game |
-| **M** | Toggle full map overlay |
+| **Space** or **P** | Pause / unpause |
 | **F11** | Toggle fullscreen |
-| **ESC** | Quit game |
+| **ESC** | Return to menu (or quit from menu) |
+
+## Scoring
+
+| Event | Points |
+|-------|--------|
+| Eat a dot | **+10** |
+| Clear a level | **+100 × level number** |
+
+Level bonuses scale up: clearing level 1 earns 100 pts, level 2 earns 200 pts, level 5 earns 500 pts, etc. Your final score is shown on the Game Over screen.
 
 ## How to Play
 
@@ -112,7 +120,7 @@ mega-bug/
 
 ## Credits
 
-- Original concept: **Mega-Bug** (1982) by Computerware
+- Original game: **Mega-Bug** (1982) — designed by **Steve Bjork**, published by **Datasoft Inc.**, licensed to **Tandy Corporation**
 - This reimagined version: Modernized with pygame, featuring procedural graphics and audio
 
 ## License

@@ -29,6 +29,7 @@ class GameState(Enum):
     PAUSED = auto()
     GAME_OVER = auto()
     LEVEL_TRANSITION = auto()
+    CONFIRM_QUIT = auto()
 
 
 class Game:
@@ -165,6 +166,26 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                if self.state in (GameState.PLAYING, GameState.PAUSED, GameState.READY,
+                                  GameState.LEVEL_TRANSITION, GameState.MENU):
+                    self._confirm_quit_return = self.state
+                    self.state = GameState.CONFIRM_QUIT
+                elif self.state == GameState.CONFIRM_QUIT:
+                    # ESC cancels the dialog
+                    self.state = self._confirm_quit_return
+            if event.type == pygame.KEYDOWN and self.state == GameState.CONFIRM_QUIT:
+                if event.key == pygame.K_y:
+                    if self._confirm_quit_return == GameState.MENU:
+                        pygame.quit()
+                        sys.exit()
+                    else:
+                        self.level = 1
+                        self.lives = CFG.LIVES
+                        self.score = 0
+                        self.state = GameState.MENU
+                elif event.key == pygame.K_n:
+                    self.state = self._confirm_quit_return
             if event.type == pygame.VIDEORESIZE:
                 w, h = event.size
                 self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
@@ -187,16 +208,7 @@ class Game:
                     elif event.key in (pygame.K_d, pygame.K_RIGHT):
                         p.request_turn(DIR_RIGHT)
 
-                if event.key == pygame.K_F11:
-                    self.fullscreen = not self.fullscreen
-                    if self.fullscreen:
-                        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-                    else:
-                        w, h = self.screen.get_size()
-                        self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
-                    self.renderer.screen = self.screen
-
-                if event.key == pygame.K_p:
+                if event.key in (pygame.K_p, pygame.K_SPACE):
                     if self.state == GameState.PLAYING:
                         self.state = GameState.PAUSED
                     elif self.state == GameState.PAUSED:
@@ -210,14 +222,12 @@ class Game:
                 if event.key == pygame.K_F11:
                     self.fullscreen = not self.fullscreen
                     if self.fullscreen:
-                        self.screen = pygame.display.set_mode(
-                            (CFG.WINDOW_W, CFG.WINDOW_H), pygame.FULLSCREEN
-                        )
+                        self._windowed_size = self.screen.get_size()
+                        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
                     else:
-                        self.screen = pygame.display.set_mode(
-                            (CFG.WINDOW_W, CFG.WINDOW_H)
-                        )
-                    self.renderer = Renderer(self.screen)
+                        ww, wh = getattr(self, '_windowed_size', (CFG.WINDOW_W, CFG.WINDOW_H))
+                        self.screen = pygame.display.set_mode((ww, wh), pygame.RESIZABLE)
+                    self.renderer.screen = self.screen
                     if self.maze:
                         self.renderer.build_maze_surface(self.maze)
                 if self.state == GameState.MENU and event.key == pygame.K_RETURN:
@@ -264,6 +274,7 @@ class Game:
         # Level clear
         if len(m.dots) == 0:
             self.audio.play_arpeggio()
+            self.score += 100 * self.level  # bonus for clearing the level
             self._completed_level = self.level
             self.level += 1
             self.state = GameState.LEVEL_TRANSITION
@@ -328,9 +339,11 @@ class Game:
         font_big = pygame.font.SysFont("monospace", 48)
         font_small = pygame.font.SysFont("monospace", 24)
         text = font_big.render("GAME OVER", True, COL.BUG_INTERCEPT)
+        score_text = font_small.render(f"Score: {self.score}", True, COL.PLAYER)
         sub = font_small.render("Press ENTER to Restart", True, COL.TEXT)
         self.screen.blit(text, (sw // 2 - text.get_width() // 2, sh // 3))
-        self.screen.blit(sub, (sw // 2 - sub.get_width() // 2, sh // 3 + 100))
+        self.screen.blit(score_text, (sw // 2 - score_text.get_width() // 2, sh // 3 + 60))
+        self.screen.blit(sub, (sw // 2 - sub.get_width() // 2, sh // 3 + 110))
 
     def _draw_level_transition(self) -> None:
         self._draw_game()
@@ -355,6 +368,7 @@ class Game:
                 show_full_map=self.show_full_map,
                 level=self.level,
                 lives=self.lives,
+                score=self.score,
             )
             
             # Trigger warning when new bugs appear in lens
@@ -372,6 +386,31 @@ class Game:
         sw, sh = self.screen.get_size()
         self.screen.blit(text, (sw // 2 - text.get_width() // 2, sh // 8))
 
+    def _draw_confirm_quit(self) -> None:
+        # Draw whatever was underneath
+        prev = self._confirm_quit_return
+        if prev == GameState.MENU:
+            self._draw_menu()
+        elif prev in (GameState.PLAYING, GameState.READY, GameState.LEVEL_TRANSITION):
+            self._draw_game()
+        elif prev == GameState.PAUSED:
+            self._draw_paused()
+        else:
+            self._draw_game()
+        # Dark overlay
+        sw, sh = self.screen.get_size()
+        overlay = pygame.Surface((sw, sh), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        self.screen.blit(overlay, (0, 0))
+        # Dialog text
+        font_big = pygame.font.SysFont("arial,helvetica,sans-serif", 32, bold=True)
+        font_sub = pygame.font.SysFont("arial,helvetica,sans-serif", 22)
+        msg = "Return to menu?" if prev != GameState.MENU else "Quit Mega-Bug?"
+        line1 = font_big.render(msg, True, COL.PLAYER)
+        line2 = font_sub.render("Press  Y  to confirm     N  to cancel", True, COL.TEXT)
+        self.screen.blit(line1, (sw // 2 - line1.get_width() // 2, sh // 2 - 40))
+        self.screen.blit(line2, (sw // 2 - line2.get_width() // 2, sh // 2 + 10))
+
     def _draw(self) -> None:
         if self.state == GameState.MENU:
             self._draw_menu()
@@ -383,6 +422,8 @@ class Game:
             self._draw_game_over()
         elif self.state == GameState.LEVEL_TRANSITION:
             self._draw_level_transition()
+        elif self.state == GameState.CONFIRM_QUIT:
+            self._draw_confirm_quit()
         else:
             self._draw_game()
         pygame.display.flip()

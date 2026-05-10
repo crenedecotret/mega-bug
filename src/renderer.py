@@ -417,6 +417,7 @@ class Renderer:
         show_full_map: bool = False,
         level: int = 1,
         lives: int = 3,
+        score: int = 0,
     ) -> List[Bug]:
         """Full render pipeline: tiny overview + magnifying lens.
         
@@ -477,15 +478,14 @@ class Renderer:
         if show_full_map:
             self.render_full_map(self.screen, maze, player, bugs)
 
-        # HUD — above the maze board, clean sans-serif
-        font = pygame.font.SysFont("arial,helvetica,sans-serif", 28, bold=True)
-        text = font.render(
-            f"Level: {level}   Lives: {lives}   Dots: {len(maze.dots)}",
-            True,
-            COL.PLAYER,
-        )
-        text_x = ov_ox + (overview_w - text.get_width()) // 2
-        text_y = ov_oy - 40
-        self.screen.blit(text, (text_x, text_y))
+        # HUD — three sections evenly spread across the maze width
+        font = pygame.font.SysFont("arial,helvetica,sans-serif", 22, bold=True)
+        t_score = font.render(f"Score: {score}", True, COL.PLAYER)
+        t_level = font.render(f"Level: {level}", True, COL.PLAYER)
+        t_lives = font.render(f"Lives: {lives}   Dots: {len(maze.dots)}", True, COL.PLAYER)
+        hud_y = ov_oy - 34
+        self.screen.blit(t_score, (ov_ox, hud_y))
+        self.screen.blit(t_level, (ov_ox + (overview_w - t_level.get_width()) // 2, hud_y))
+        self.screen.blit(t_lives, (ov_ox + overview_w - t_lives.get_width(), hud_y))
         
         return visible_bugs
