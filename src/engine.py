@@ -1,7 +1,7 @@
 """Mega-Bug Modern — Maze generation, pathfinding, heat map."""
 import random
 import heapq
-from typing import List, Tuple, Optional, Set
+from typing import Dict, List, Tuple, Optional, Set
 from .settings import CFG
 
 

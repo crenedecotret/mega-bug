@@ -9,7 +9,7 @@ from typing import List, Tuple, Optional
 import pygame
 
 from .settings import CFG, COL
-from .engine import Maze, HeatMap, astar
+from .engine import Maze, HeatMap, astar, Position
 from .entities import Player, Bug, BugState, DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT, DIR_NONE
 from .renderer import Renderer
 from .audio import AudioManager
@@ -288,8 +288,8 @@ class Game:
 
         # Collision check
         for bug in self.bugs:
-            dist = math.hypot(p.cell_x - bug.cell_x, p.cell_y - bug.cell_y)
-            if dist < 0.5:
+            dist = math.hypot(p.gx - bug.gx, p.gy - bug.gy)
+            if dist < 0.7:
                 self.lives -= 1
                 if self.lives <= 0:
                     self.audio.play_crush()
@@ -375,7 +375,6 @@ class Game:
             visible_ids = {id(b) for b in visible_bugs}
             new_bugs = visible_ids - self._bugs_in_lens
             if new_bugs and self.state == GameState.PLAYING:
-                print(f"New bug in lens! Total visible: {len(visible_bugs)}, New: {len(new_bugs)}")
                 self.audio.play_warning()
             self._bugs_in_lens = visible_ids
 

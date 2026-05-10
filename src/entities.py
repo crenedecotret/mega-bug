@@ -15,12 +15,6 @@ DIR_LEFT: Direction = (-1, 0)
 DIR_RIGHT: Direction = (1, 0)
 
 
-def direction_from_input(keys: Tuple[int, ...]) -> Optional[Direction]:
-    """Map key tuples to cardinal directions."""
-    # This is a helper; actual mapping is done in main via pygame constants
-    return None  # placeholder; direction is set directly in player
-
-
 class Player:
     """Grid-snapped player with input buffering."""
 

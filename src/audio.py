@@ -2,9 +2,7 @@
 import math
 import numpy as np
 import pygame
-from typing import List
 from .settings import CFG
-from .entities import Bug, BugState
 
 
 class AudioManager:
@@ -134,7 +132,6 @@ class AudioManager:
         if hasattr(self, '_last_warning') and now - self._last_warning < 0.3:
             return
         self._last_warning = now
-        print("WARNING SOUND TRIGGERED")
 
         sr = self.sample_rate
         dur = 0.2
